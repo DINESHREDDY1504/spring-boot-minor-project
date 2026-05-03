@@ -17,11 +17,11 @@ public class EmailService {
 
         try {
 
-            // 🔥 Create HTML mail
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-            String trackLink = "http://localhost:8080/track.html?id=" + complaintId;
+            // ✅ FIXED (use deployed URL)
+            String trackLink = "https://spring-boot-minor-project.onrender.com/track.html?id=" + complaintId;
 
             String htmlContent
                     = "<h3>✅ Complaint Registered Successfully</h3>"
@@ -39,11 +39,11 @@ public class EmailService {
                     + "<p>" + trackLink + "</p>"
                     + "<br>"
                     + "<p>Thank you.</p>"
-                    +"<p>><i>Municipal Complaint Management System,Telangana</i></p>";
+                    + "<p><i>Municipal Complaint Management System,TML</i></p>";
 
             helper.setTo(to);
             helper.setSubject("Complaint Registered Successfully");
-            helper.setText(htmlContent, true); // 🔥 IMPORTANT (HTML enabled)
+            helper.setText(htmlContent, true);
 
             mailSender.send(message);
 

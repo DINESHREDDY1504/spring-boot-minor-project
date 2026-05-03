@@ -21,7 +21,7 @@ public class ComplaintService {
     @Autowired
     private EmailService emailService;
 
-    // 🔥 DISTANCE FUNCTION
+    // 🔥 DISTANCE FUNCTION (UNCHANGED)
     public double distance(double lat1, double lon1, double lat2, double lon2) {
 
         double R = 6371;
@@ -48,11 +48,9 @@ public class ComplaintService {
         String id = "MUN-" + UUID.randomUUID().toString().substring(0, 8);
         complaint.setComplaintId(id);
 
-        if (complaint.getImageUrl() != null) {
-            complaint.setImageUrl("/uploads/" + complaint.getImageUrl());
-        }
-
-        // 🔥 DUPLICATE DETECTION (SMART: CATEGORY + 10M + STATUS + 10 DAYS)
+        // ✅ FIX: DO NOT ADD /uploads/ (Cloudinary already gives full URL)
+        // ❌ REMOVED: complaint.setImageUrl("/uploads/" + complaint.getImageUrl());
+        // 🔥 DUPLICATE DETECTION (UNCHANGED)
         List<Complaint> all = complaintRepository.findAll();
 
         for (Complaint c : all) {
@@ -64,12 +62,10 @@ public class ComplaintService {
                 continue;
             }
 
-            // CATEGORY MATCH
             if (!c.getCategory().trim().equalsIgnoreCase(complaint.getCategory().trim())) {
                 continue;
             }
 
-            // DISTANCE CHECK
             double dist = distance(
                     complaint.getLatitude(), complaint.getLongitude(),
                     c.getLatitude(), c.getLongitude()
@@ -79,14 +75,12 @@ public class ComplaintService {
                 continue;
             }
 
-            // 🔥 STATUS + TIME LOGIC
             if ("SOLVED".equalsIgnoreCase(c.getStatus())) {
 
                 if (c.getCreatedAt() != null) {
 
                     LocalDateTime now = LocalDateTime.now();
 
-                    // ❌ If solved long back → not duplicate
                     if (c.getCreatedAt().isBefore(now.minusDays(10))) {
                         continue;
                     }
@@ -101,10 +95,9 @@ public class ComplaintService {
             break;
         }
 
-        // SAVE (UNCHANGED)
         Complaint saved = complaintRepository.save(complaint);
 
-        // EMAIL (UNCHANGED)
+        // 🔥 EMAIL (UNCHANGED)
         try {
             if (saved.getEmail() != null && !saved.getEmail().isEmpty()) {
                 emailService.sendComplaintEmail(
@@ -173,8 +166,9 @@ public class ComplaintService {
 
         parent.setStatus("SOLVED");
 
+        // ✅ FIX: DO NOT ADD /uploads/ (Cloudinary URL)
         if (update.getResolvedImageUrl() != null) {
-            parent.setResolvedImageUrl("/uploads/" + update.getResolvedImageUrl());
+            parent.setResolvedImageUrl(update.getResolvedImageUrl());
         }
 
         complaintRepository.save(parent);

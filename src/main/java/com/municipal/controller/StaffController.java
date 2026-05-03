@@ -12,7 +12,7 @@ import com.municipal.service.StaffService;
 
 @RestController
 @RequestMapping("/api/staff")
-@CrossOrigin
+@CrossOrigin(origins = "*")
 public class StaffController {
 
     @Autowired

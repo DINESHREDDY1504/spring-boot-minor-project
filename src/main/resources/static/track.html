@@ -52,7 +52,7 @@
     </div>
 
     <script>
-
+        const BASE_URL = "https://spring-boot-minor-project.onrender.com";
         let map = L.map('map', { scrollWheelZoom: false })
             .setView([17.385, 78.486], 12);
 
@@ -83,7 +83,7 @@
                 return;
             }
 
-            fetch("http://localhost:8080/api/complaints/" + id)
+            fetch(`${BASE_URL}/api/complaints/${id}`)
                 .then(res => {
                     if (!res.ok) throw new Error("Not Found");
                     return res.json();
@@ -99,11 +99,11 @@
                 <p>${c.description}</p>
 
                 <h4>📸 Before Image</h4>
-                <img src="http://localhost:8080${c.imageUrl}" width="250">
+               <img src="${c.imageUrl}" width="250">
 
                 ${c.resolvedImageUrl ? `
                     <h4>✅ After Image</h4>
-                    <img src="http://localhost:8080${c.resolvedImageUrl}" width="250">
+                    <img src="${c.resolvedImageUrl}" width="250">
                 ` : `<p style="color:orange">⏳ Not solved yet</p>`}
 
                 ${c.status === "SOLVED" ? `
@@ -137,10 +137,10 @@
                     <b>${c.category}</b><br>
                     <small>${c.description}</small><br><br>
 
-                    <img src="http://localhost:8080${c.imageUrl}" width="200"><br>
+                    <img src="${c.imageUrl}" width="200"><br>
 
                     ${c.status === "SOLVED" ? `
-                        <img src="http://localhost:8080${c.resolvedImageUrl}" width="200"><br>
+                        <img src="${c.resolvedImageUrl}" width="200"><br>
                         <p style="color:green"><b>✔ Solved</b></p>
 
                         ${c.feedback ? `<p style="color:purple">💬 ${c.feedback}</p>` : ""}
@@ -173,7 +173,7 @@
                 return;
             }
 
-            fetch("http://localhost:8080/api/complaints/feedback/" + id, {
+            fetch(`${BASE_URL}/api/complaints/feedback/${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"

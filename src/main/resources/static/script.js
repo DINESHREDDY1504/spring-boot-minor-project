@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 formData.append("longitude", position.coords.longitude);
                 formData.append("image", imageFile);
 
-                fetch("http://localhost:8080/api/complaints/upload", {
+                fetch("https://spring-boot-minor-project.onrender.com/api/complaints/upload", {
                     method: "POST",
                     body: formData
                 })
@@ -226,7 +226,7 @@ function sendEmail(id) {
         return;
     }
 
-    fetch("http://localhost:8080/api/complaints/sendEmail", {
+    fetch("https://spring-boot-minor-project.onrender.com/api/complaints/sendEmail", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

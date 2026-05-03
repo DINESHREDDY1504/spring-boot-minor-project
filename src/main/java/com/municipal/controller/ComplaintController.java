@@ -1,6 +1,5 @@
 package com.municipal.controller;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.municipal.model.Complaint;
 import com.municipal.service.ComplaintService;
 import com.municipal.service.EmailService;
@@ -25,7 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/complaints")
-@CrossOrigin
+@CrossOrigin(origins = "*")
 public class ComplaintController {
 
     @Autowired
@@ -33,10 +34,15 @@ public class ComplaintController {
 
     @Autowired
     private EmailService emailService;
+
     @Autowired
     private SmsService smsService;
 
-    // 🔹 Upload Complaint
+    // ✅ NEW: Cloudinary injection
+    @Autowired
+    private Cloudinary cloudinary;
+
+    // 🔹 Upload Complaint (MODIFIED)
     @PostMapping("/upload")
     public Complaint uploadComplaint(
             @RequestParam("category") String category,
@@ -46,16 +52,13 @@ public class ComplaintController {
             @RequestParam("image") MultipartFile file,
             HttpServletRequest request) throws Exception {
 
-        String uploadDir = System.getProperty("user.dir") + "/uploads/";
+        // 🔥 Upload to Cloudinary (instead of local storage)
+        Map uploadResult = cloudinary.uploader().upload(
+                file.getBytes(),
+                ObjectUtils.emptyMap()
+        );
 
-        File folder = new File(uploadDir);
-        if (!folder.exists()) {
-            folder.mkdirs();
-        }
-
-        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        File saveFile = new File(uploadDir + fileName);
-        file.transferTo(saveFile);
+        String imageUrl = uploadResult.get("secure_url").toString();
 
         String ipAddress = request.getRemoteAddr();
 
@@ -64,11 +67,12 @@ public class ComplaintController {
         complaint.setDescription(description);
         complaint.setLatitude(latitude);
         complaint.setLongitude(longitude);
-        complaint.setImageUrl(fileName);
+        complaint.setImageUrl(imageUrl); // ✅ Cloudinary URL
 
         return complaintService.saveComplaint(complaint, ipAddress);
     }
 
+    // 🔹 SMS (UNCHANGED)
     @PostMapping("/sendSMS")
     public String sendSMS(@RequestBody Map<String, String> body) {
 
@@ -80,7 +84,7 @@ public class ComplaintController {
         return "SMS sent successfully";
     }
 
-    // 🔹 Send Email
+    // 🔹 Email (UNCHANGED)
     @PostMapping("/sendEmail")
     public String sendEmail(@RequestBody Map<String, String> body) {
 
@@ -92,19 +96,19 @@ public class ComplaintController {
         return "Email sent successfully";
     }
 
-    // 🔹 Get All Complaints
+    // 🔹 Get All Complaints (UNCHANGED)
     @GetMapping("/all")
     public List<Complaint> getAllComplaints() {
         return complaintService.getAllComplaints();
     }
 
-    // 🔹 Stats
+    // 🔹 Stats (UNCHANGED)
     @GetMapping("/stats")
     public Map<String, Object> getStats() {
         return complaintService.getStats();
     }
 
-    // 🔹 Feedback
+    // 🔹 Feedback (UNCHANGED)
     @PutMapping("/feedback/{id}")
     public Complaint addFeedback(@PathVariable String id,
             @RequestBody Map<String, String> body) {
@@ -112,31 +116,27 @@ public class ComplaintController {
         return complaintService.addFeedback(id, body.get("feedback"));
     }
 
-    // 🔹 Solve Complaint
+    // 🔹 Solve Complaint (MODIFIED)
     @PutMapping(value = "/solve/{id}", consumes = "multipart/form-data")
     public Complaint solveComplaint(
             @PathVariable Long id,
             @RequestParam("image") MultipartFile file) throws Exception {
 
-        String uploadDir = System.getProperty("user.dir") + "/uploads/";
+        // 🔥 Upload resolved image to Cloudinary
+        Map uploadResult = cloudinary.uploader().upload(
+                file.getBytes(),
+                ObjectUtils.emptyMap()
+        );
 
-        File folder = new File(uploadDir);
-        if (!folder.exists()) {
-            folder.mkdirs();
-        }
-
-        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-
-        File saveFile = new File(uploadDir + fileName);
-        file.transferTo(saveFile);
+        String imageUrl = uploadResult.get("secure_url").toString();
 
         Complaint update = new Complaint();
-        update.setResolvedImageUrl(fileName);
+        update.setResolvedImageUrl(imageUrl); // ✅ Cloudinary URL
 
         return complaintService.markSolved(id, update);
     }
 
-    // 🔹 Tracking (FIXED FOR DUPLICATES)
+    // 🔹 Tracking (UNCHANGED)
     @GetMapping("/{complaintId}")
     public Complaint getComplaintById(@PathVariable String complaintId) {
 
@@ -148,7 +148,6 @@ public class ComplaintController {
 
             if (parent != null) {
 
-                // 🔥 KEEP USER IMAGE
                 c.setStatus(parent.getStatus());
                 c.setResolvedImageUrl(parent.getResolvedImageUrl());
                 c.setFeedback(parent.getFeedback());

@@ -129,7 +129,7 @@
     </div>
 
     <script>
-
+        const BASE_URL = "https://spring-boot-minor-project.onrender.com";
         const role = localStorage.getItem("role");
 
         // 🔥 SHOW USERNAME
@@ -162,7 +162,7 @@
         map.addLayer(cluster);
 
         // STATS
-        fetch("http://localhost:8080/api/complaints/stats")
+        fetch(`${BASE_URL}/api/complaints/stats`)
             .then(r => r.json())
             .then(d => {
 
@@ -186,7 +186,7 @@
             });
 
         // LOAD DATA
-        fetch("http://localhost:8080/api/complaints/all")
+        fetch(`${BASE_URL}/api/complaints/all`)
             .then(r => r.json())
             .then(d => {
                 all = d;
@@ -221,11 +221,11 @@
                     <p><b>Status:</b> ${c.status}</p>
 
                     <h4>📸 Before</h4>
-                    <img src="http://localhost:8080${c.imageUrl}" width="200"><br>
+                    <img src="${c.imageUrl}" width="200"><br>
 
                     ${c.status === "SOLVED" ? `
                         <h4>✅ After</h4>
-                        <img src="http://localhost:8080${c.resolvedImageUrl}" width="200"><br>
+                        <img src="${c.resolvedImageUrl}" width="200"><br>
                         ${c.feedback
                             ? `<p style="color:purple"><b>Feedback:</b> ${c.feedback}</p>`
                             : "<p style='color:gray'>No feedback</p>"
@@ -264,7 +264,7 @@
             let fd = new FormData();
             fd.append("image", f);
 
-            fetch("http://localhost:8080/api/complaints/solve/" + id, {
+            fetch(`${BASE_URL}/api/complaints/solve/${id}`, {
                 method: "PUT",
                 body: fd
             })
@@ -276,7 +276,7 @@
 
             let username = localStorage.getItem("username");
 
-            fetch("http://localhost:8080/api/staff/logout", {
+            fetch(`${BASE_URL}/api/staff/logout`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
