@@ -2,35 +2,66 @@
 <html>
 
 <head>
+    <meta charset="UTF-8">
     <title>Raise Complaint</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <h2>Raise Complaint</h2>
+    <div class="header">
+        <h1>Raise Complaint</h1>
+    </div>
 
-    <form id="complaintForm">
+    <!-- 🔙 NAVIGATION -->
+    <div class="nav-buttons">
+        <button onclick="goBack()">🔙 Back</button>
+        <button onclick="goHome()">🏠 Home</button>
+    </div>
 
-        <select id="category" required>
-            <option value="">Select Category</option>
-            <option value="Garbage">Garbage</option>
-            <option value="Road Damage">Road Damage</option>
-            <option value="Street Light">Street Light</option>
-            <option value="Water Leakage">Water Leakage</option>
-        </select>
+    <div class="card">
 
-        <textarea id="description" placeholder="Enter complaint description" required></textarea>
+        <form id="complaintForm">
 
-        <input type="file" id="image" accept="image/*" capture="environment" required>
+            <select id="category" required>
+                <option value="">Select Category</option>
+                <option>Garbage</option>
+                <option>Road Damage</option>
+                <option>Street Light</option>
+            </select>
 
-        <button type="submit">Submit Complaint</button>
+            <textarea id="description" placeholder="Enter description" required></textarea>
 
-    </form>
+            <!-- 📷 CAMERA SECTION -->
+            <video id="camera" autoplay playsinline style="width:50%; display:none;"></video>
+
+            <canvas id="canvas" style="display:none;"></canvas>
+
+            <img id="preview" style="width:50%; margin-top:10px; display:none; border:2px solid #ccc;" />
+
+            <br>
+
+            <button type="button" onclick="openCamera()">📷 Open Camera</button>
+            <button type="button" onclick="capturePhoto()">📸 Capture</button>
+            <button type="button" onclick="stopCameraManually()">❌ Close Camera</button>
+            <button type="button" onclick="openCamera()">🔁 Retake</button>
+            <button type="button" onclick="cancelCapture()">❌ Cancel</button>
+
+            <br><br>
+
+            <!-- 📁 FILE FALLBACK -->
+            <input type="file" id="image" accept="image/*">
+
+            <button class="primary">Submit</button>
+
+        </form>
+
+    </div>
 
     <div id="message"></div>
 
     <script src="script.js"></script>
+
 </body>
 
 </html>

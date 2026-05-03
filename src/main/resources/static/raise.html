@@ -13,14 +13,16 @@
         <h1>Raise Complaint</h1>
     </div>
 
+    <!-- 🔙 NAVIGATION -->
+    <div class="nav-buttons">
+        <button onclick="goBack()">🔙 Back</button>
+        <button onclick="goHome()">🏠 Home</button>
+    </div>
+
     <div class="card">
 
         <form id="complaintForm">
 
-            <!-- 🔥 NEW EMAIL FIELD -->
-            <!-- <input type="email" id="email" placeholder="Enter your email" required> -->
-
-            <!-- EXISTING -->
             <select id="category" required>
                 <option value="">Select Category</option>
                 <option>Garbage</option>
@@ -30,7 +32,25 @@
 
             <textarea id="description" placeholder="Enter description" required></textarea>
 
-            <input type="file" id="image" required>
+            <!-- 📷 CAMERA SECTION -->
+            <video id="camera" autoplay playsinline style="width:50%; display:none;"></video>
+
+            <canvas id="canvas" style="display:none;"></canvas>
+
+            <img id="preview" style="width:50%; margin-top:10px; display:none; border:2px solid #ccc;" />
+
+            <br>
+
+            <button type="button" onclick="openCamera()">📷 Open Camera</button>
+            <button type="button" onclick="capturePhoto()">📸 Capture</button>
+            <button type="button" onclick="stopCameraManually()">❌ Close Camera</button>
+            <button type="button" onclick="openCamera()">🔁 Retake</button>
+            <button type="button" onclick="cancelCapture()">❌ Cancel</button>
+
+            <br><br>
+
+            <!-- 📁 FILE FALLBACK -->
+            <input type="file" id="image" accept="image/*">
 
             <button class="primary">Submit</button>
 
@@ -38,7 +58,6 @@
 
     </div>
 
-    <!-- EXISTING -->
     <div id="message"></div>
 
     <script src="script.js"></script>

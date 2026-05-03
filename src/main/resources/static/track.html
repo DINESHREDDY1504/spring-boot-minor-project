@@ -37,7 +37,10 @@
     <div class="header">
         <h1>Track Complaint</h1>
     </div>
-
+    <div class="nav-buttons">
+        <button onclick="goBack()">🔙 Back</button>
+        <button onclick="goHome()">🏠 Home</button>
+    </div>
     <div class="card">
 
         <input type="text" id="cid" placeholder="Enter Complaint ID (MUN-XXXX)">
@@ -152,6 +155,13 @@
                         "<h3 style='color:red'>❌ Complaint not found</h3>";
                 });
         }
+        function goBack() {
+            window.history.back();
+        }
+
+        function goHome() {
+            window.location.href = "index.html";
+        }
 
         // 🔥 FEEDBACK FUNCTION (UNCHANGED)
         function sendFeedback(id) {
@@ -181,6 +191,18 @@
                     alert("❌ Failed to submit feedback");
                 });
         }
+        window.onload = function () {
+
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get("id");
+
+            if (id) {
+                document.getElementById("cid").value = id;
+
+                // 🔥 AUTO CALL TRACK FUNCTION
+                trackComplaint();
+            }
+        };
 
     </script>
 

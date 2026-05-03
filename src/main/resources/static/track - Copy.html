@@ -5,62 +5,204 @@
     <meta charset="UTF-8">
     <title>Track Complaint</title>
 
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
+    <style>
+        #map {
+            height: 400px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+        }
+
+        img {
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+    </style>
 </head>
 
 <body>
 
-    <h2>📍 Track Complaint</h2>
+    <div class="header">
+        <h1>Track Complaint</h1>
+    </div>
+    <div class="nav-buttons">
+        <button onclick="goBack()">🔙 Back</button>
+        <button onclick="goHome()">🏠 Home</button>
+    </div>
+    <div class="card">
 
-    <input id="cid" placeholder="Enter Complaint ID">
-    <button onclick="track()">Track</button>
+        <input type="text" id="cid" placeholder="Enter Complaint ID (MUN-XXXX)">
+        <button onclick="trackComplaint()">Track</button>
 
-    <div id="result"></div>
-    <div id="map" style="height:400px;"></div>
+        <div id="result"></div>
+        <div id="map"></div>
+
+    </div>
 
     <script>
 
         let map = L.map('map', { scrollWheelZoom: false })
             .setView([17.385, 78.486], 12);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        // 🔥 SAME PROFESSIONAL MAP STYLE AS DASHBOARD
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
 
-        // 🔥 CTRL ZOOM ONLY
+        // 🔥 CTRL + SCROLL ONLY (FIXED)
+        map.scrollWheelZoom.disable();
         map.getContainer().addEventListener('wheel', function (e) {
-            if (e.ctrlKey) {
+            if (!e.ctrlKey) {
                 e.preventDefault();
-                map.scrollWheelZoom.enable();
             } else {
-                map.scrollWheelZoom.disable();
+                map.scrollWheelZoom.enable();
             }
         }, { passive: false });
 
         let marker;
 
-        function track() {
+        // 🔥 TRACK FUNCTION (LOGIC SAME)
+        function trackComplaint() {
 
-            let id = document.getElementById("cid").value;
+            let id = document.getElementById("cid").value.trim();
 
-            fetch("/api/complaints/" + id)
-                .then(res => res.json())
+            if (!id) {
+                alert("Enter Complaint ID");
+                return;
+            }
+
+            fetch("http://localhost:8080/api/complaints/" + id)
+                .then(res => {
+                    if (!res.ok) throw new Error("Not Found");
+                    return res.json();
+                })
                 .then(c => {
 
+                    // 🔥 UI DISPLAY (UNCHANGED)
                     document.getElementById("result").innerHTML = `
-            Status: ${c.status}<br>
-            ${c.description}<br>
-            <img src="${c.imageUrl}" width="200"><br>
-            ${c.resolvedImageUrl ? `<img src="${c.resolvedImageUrl}" width="200">` : ""}
-        `;
+                <h3>Status: ${c.status}</h3>
 
-                    map.setView([c.latitude, c.longitude], 15);
+                <p><b>Complaint ID:</b> ${c.complaintId}</p>
+                <p><b>Category:</b> ${c.category}</p>
+                <p>${c.description}</p>
 
-                    if (marker) map.removeLayer(marker);
+                <h4>📸 Before Image</h4>
+                <img src="http://localhost:8080${c.imageUrl}" width="250">
 
-                    marker = L.marker([c.latitude, c.longitude]).addTo(map);
+                ${c.resolvedImageUrl ? `
+                    <h4>✅ After Image</h4>
+                    <img src="http://localhost:8080${c.resolvedImageUrl}" width="250">
+                ` : `<p style="color:orange">⏳ Not solved yet</p>`}
+
+                ${c.status === "SOLVED" ? `
+                    <h4>⚠ Feedback</h4>
+                    <textarea id="feedback" placeholder="Report issue if not fixed"></textarea><br>
+                    <button onclick="sendFeedback('${c.complaintId}')">Submit Feedback</button>
+                ` : ""}
+            `;
+
+                    // 🔥 MAP UPDATE (IMPROVED)
+                    map.setView([c.latitude, c.longitude], 16);
+
+                    if (marker) {
+                        map.removeLayer(marker);
+                    }
+
+                    let color = c.status === "SOLVED" ? "green" : "red";
+
+                    marker = L.circleMarker([c.latitude, c.longitude], {
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.7,
+                        radius: 12,
+                        weight: 2
+                    }).addTo(map);
+
+                    // 🔥 BEAUTIFUL POPUP
+                    marker.bindPopup(`
+                <div style="width:220px">
+
+                    <b>${c.category}</b><br>
+                    <small>${c.description}</small><br><br>
+
+                    <img src="http://localhost:8080${c.imageUrl}" width="200"><br>
+
+                    ${c.status === "SOLVED" ? `
+                        <img src="http://localhost:8080${c.resolvedImageUrl}" width="200"><br>
+                        <p style="color:green"><b>✔ Solved</b></p>
+
+                        ${c.feedback ? `<p style="color:purple">💬 ${c.feedback}</p>` : ""}
+                    ` : `<p style="color:red"><b>⏳ Pending</b></p>`}
+
+                </div>
+            `).openPopup();
+
+                })
+                .catch(() => {
+                    document.getElementById("result").innerHTML =
+                        "<h3 style='color:red'>❌ Complaint not found</h3>";
                 });
         }
+        function goBack() {
+            window.history.back();
+        }
+
+        function goHome() {
+            window.location.href = "index.html";
+        }
+
+        // 🔥 FEEDBACK FUNCTION (UNCHANGED)
+        function sendFeedback(id) {
+
+            let text = document.getElementById("feedback").value;
+
+            if (!text) {
+                alert("Please enter feedback");
+                return;
+            }
+
+            fetch("http://localhost:8080/api/complaints/feedback/" + id, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    feedback: text
+                })
+            })
+                .then(res => res.json())
+                .then(() => {
+                    alert("✅ Feedback submitted successfully");
+                    document.getElementById("feedback").value = "";
+                })
+                .catch(() => {
+                    alert("❌ Failed to submit feedback");
+                });
+        }
+        window.onload = function () {
+
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get("id");
+
+            if (id) {
+                document.getElementById("cid").value = id;
+
+                // 🔥 AUTO CALL TRACK FUNCTION
+                trackComplaint();
+            }
+        };
 
     </script>
 

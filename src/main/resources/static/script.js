@@ -1,3 +1,6 @@
+let stream;
+let capturedBlob = null;
+
 document.addEventListener("DOMContentLoaded", function () {
 
     const form = document.getElementById("complaintForm");
@@ -10,17 +13,27 @@ document.addEventListener("DOMContentLoaded", function () {
             submitBtn.disabled = true;
             submitBtn.innerText = "Submitting...";
 
-            // 🔥 Get location
             navigator.geolocation.getCurrentPosition(function (position) {
 
                 let category = document.getElementById("category").value;
                 let description = document.getElementById("description").value;
                 let imageInput = document.getElementById("image");
-                let imageFile = imageInput.files[0];
+
+                // 🔥 USE CAMERA OR FILE
+                let imageFile = capturedBlob
+                    ? new File([capturedBlob], "photo.jpg", { type: "image/jpeg" })
+                    : imageInput.files[0];
 
                 // 🔴 Validation
                 if (!category || !description || !imageFile) {
-                    alert("Please fill all fields and select an image");
+                    alert("Please fill all fields and capture/select image");
+                    resetButton(submitBtn);
+                    return;
+                }
+
+                // ⚠️ Prevent 413 error
+                if (imageFile.size > 5 * 1024 * 1024) {
+                    alert("Image too large (max 5MB)");
                     resetButton(submitBtn);
                     return;
                 }
@@ -32,7 +45,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 formData.append("longitude", position.coords.longitude);
                 formData.append("image", imageFile);
 
-                // 🔥 API CALL
                 fetch("http://localhost:8080/api/complaints/upload", {
                     method: "POST",
                     body: formData
@@ -47,17 +59,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         let msg = document.getElementById("message");
 
-                        if (!msg) {
-                            alert("UI Error: message div not found");
-                            return;
-                        }
-
                         if (!result.complaintId) {
                             msg.innerHTML = "<h3 style='color:red'>❌ Complaint ID not received</h3>";
                             return;
                         }
 
-                        // 🔥 NEW UI (POST SUBMISSION EMAIL)
                         msg.innerHTML = `
                         <h3 style="color:green">✅ Complaint Registered Successfully!</h3>
 
@@ -73,13 +79,20 @@ document.addEventListener("DOMContentLoaded", function () {
                         <button onclick="sendWhatsApp('${result.complaintId}')">
                             📱 WhatsApp Notification
                         </button>
+
+                        <br><br>
+
+                        <button onclick="goTrack('${result.complaintId}')">
+                            🔍 Track Complaint
+                        </button>
                     `;
 
                         form.reset();
+                        capturedBlob = null;
                     })
                     .catch(error => {
                         console.error("❌ Error:", error);
-                        alert("❌ Failed to submit complaint. Check backend.");
+                        alert("❌ Failed to submit complaint.");
                     })
                     .finally(() => {
                         resetButton(submitBtn);
@@ -101,9 +114,111 @@ function resetButton(btn) {
     btn.innerText = "Submit Complaint";
 }
 
-// 🔥 REAL EMAIL API CALL
-function sendEmail(id) {
+// 📷 Open Camera
+function openCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(s => {
+            stream = s;
+            const video = document.getElementById("camera");
+            video.srcObject = stream;
+            video.style.display = "block";
+        })
+        .catch(() => alert("Camera not accessible"));
+}
 
+// 📸 Capture Photo
+function capturePhoto() {
+
+    const video = document.getElementById("camera");
+    const canvas = document.getElementById("canvas");
+    const preview = document.getElementById("preview");
+
+    if (!video.videoWidth) {
+        alert("Camera not ready. Click Open Camera first.");
+        return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+
+        if (!blob) {
+            alert("Capture failed");
+            return;
+        }
+
+        capturedBlob = blob;
+
+        // 🔥 SHOW PREVIEW
+        preview.src = URL.createObjectURL(blob);
+        preview.style.display = "block";
+
+    }, "image/jpeg", 0.8);
+
+    stopCameraManually(); // auto close
+}
+
+// ❌ Stop Camera (FIXED)
+function stopCameraManually() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    document.getElementById("camera").style.display = "none";
+}
+
+// 🔙 Navigation
+function goBack() {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = "index.html";
+    }
+}
+function cancelCapture() {
+
+    // 🔥 Stop camera if running
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+
+    // 🔥 Hide camera
+    const video = document.getElementById("camera");
+    if (video) {
+        video.style.display = "none";
+        video.srcObject = null;
+    }
+
+    // 🔥 Clear preview
+    const preview = document.getElementById("preview");
+    if (preview) {
+        preview.src = "";
+        preview.style.display = "none";
+    }
+
+    // 🔥 Clear captured blob
+    capturedBlob = null;
+
+    // 🔥 Clear file input
+    const fileInput = document.getElementById("image");
+    if (fileInput) {
+        fileInput.value = "";
+    }
+
+    // alert("Capture cancelled");
+}
+
+function goHome() {
+    window.location.href = "index.html";
+}
+
+// 📧 Email
+function sendEmail(id) {
     let email = document.getElementById("userEmail").value;
 
     if (!email) {
@@ -116,21 +231,21 @@ function sendEmail(id) {
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-            email: email,
-            complaintId: id
-        })
+        body: JSON.stringify({ email, complaintId: id })
     })
         .then(() => alert("✅ Email sent successfully"))
         .catch(() => alert("❌ Failed to send email"));
 }
 
-// 📱 WhatsApp (REAL CLICK)
+// 📱 WhatsApp
 function sendWhatsApp(id) {
-
     let msg = encodeURIComponent(
         "Your complaint has been registered.\nComplaint ID: " + id
     );
-
     window.open(`https://wa.me/?text=${msg}`, "_blank");
+}
+
+// 🔍 Track redirect
+function goTrack(id) {
+    window.location.href = "track.html?id=" + id;
 }
