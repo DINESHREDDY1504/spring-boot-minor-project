@@ -85,16 +85,20 @@ public class ComplaintController {
     }
 
     // 🔹 Email (UNCHANGED)
-    @PostMapping("/sendEmail")
-    public String sendEmail(@RequestBody Map<String, String> body) {
+   @PostMapping("/sendEmail")
+public String sendEmail(@RequestBody Map<String, String> body) {
 
+    try {
         String email = body.get("email");
         String complaintId = body.get("complaintId");
 
         emailService.sendComplaintEmail(email, complaintId);
 
-        return "Email sent successfully";
+        return "SUCCESS";
+    } catch (Exception e) {
+        return "FAILED";
     }
+}
 
     // 🔹 Get All Complaints (UNCHANGED)
     @GetMapping("/all")

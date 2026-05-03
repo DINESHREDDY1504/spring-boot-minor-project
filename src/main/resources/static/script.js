@@ -226,6 +226,11 @@ function sendEmail(id) {
         return;
     }
 
+    // 🔥 get button and disable it
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerText = "Sending...";
+
     fetch("https://spring-boot-minor-project.onrender.com/api/complaints/sendEmail", {
         method: "POST",
         headers: {
@@ -233,8 +238,22 @@ function sendEmail(id) {
         },
         body: JSON.stringify({ email, complaintId: id })
     })
-        .then(() => alert("✅ Email sent successfully"))
-        .catch(() => alert("❌ Failed to send email"));
+        .then(res => res.text()) // 🔥 important
+        .then(data => {
+            if (data === "SUCCESS" || data.includes("success")) {
+                alert("✅ Email sent successfully");
+            } else {
+                alert("⚠ Email may not have been sent");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("❌ Failed to send email");
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerText = "Send Email";
+        });
 }
 
 // 📱 WhatsApp
