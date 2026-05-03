@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Raise Complaint</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h2>Raise Complaint</h2>
+
+    <form id="complaintForm">
+
+        <select id="category" required>
+            <option value="">Select Category</option>
+            <option value="Garbage">Garbage</option>
+            <option value="Road Damage">Road Damage</option>
+            <option value="Street Light">Street Light</option>
+            <option value="Water Leakage">Water Leakage</option>
+        </select>
+
+        <textarea id="description" placeholder="Enter complaint description" required></textarea>
+
+        <input type="file" id="image" accept="image/*" capture="environment" required>
+
+        <button type="submit">Submit Complaint</button>
+
+    </form>
+
+    <div id="message"></div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

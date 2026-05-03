@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Track Complaint</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+</head>
+
+<body>
+
+    <h2>📍 Track Complaint</h2>
+
+    <input id="cid" placeholder="Enter Complaint ID">
+    <button onclick="track()">Track</button>
+
+    <div id="result"></div>
+    <div id="map" style="height:400px;"></div>
+
+    <script>
+
+        let map = L.map('map', { scrollWheelZoom: false })
+            .setView([17.385, 78.486], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // 🔥 CTRL ZOOM ONLY
+        map.getContainer().addEventListener('wheel', function (e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                map.scrollWheelZoom.enable();
+            } else {
+                map.scrollWheelZoom.disable();
+            }
+        }, { passive: false });
+
+        let marker;
+
+        function track() {
+
+            let id = document.getElementById("cid").value;
+
+            fetch("/api/complaints/" + id)
+                .then(res => res.json())
+                .then(c => {
+
+                    document.getElementById("result").innerHTML = `
+            Status: ${c.status}<br>
+            ${c.description}<br>
+            <img src="${c.imageUrl}" width="200"><br>
+            ${c.resolvedImageUrl ? `<img src="${c.resolvedImageUrl}" width="200">` : ""}
+        `;
+
+                    map.setView([c.latitude, c.longitude], 15);
+
+                    if (marker) map.removeLayer(marker);
+
+                    marker = L.marker([c.latitude, c.longitude]).addTo(map);
+                });
+        }
+
+    </script>
+
+</body>
+
+</html>

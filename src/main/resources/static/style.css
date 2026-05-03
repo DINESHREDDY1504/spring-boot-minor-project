@@ -1,0 +1,80 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+}
+
+/* 🔵 HEADER */
+.header {
+    background: #0b3d91;
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header img {
+    height: 50px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 20px;
+}
+
+/* 🔷 NAVBAR */
+.navbar {
+    background: #002366;
+    padding: 10px;
+}
+
+.navbar a {
+    color: white;
+    margin-right: 20px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* 📦 CARD */
+.card {
+    background: white;
+    padding: 20px;
+    margin: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 🔘 BUTTONS */
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.primary {
+    background: #0b3d91;
+    color: white;
+}
+
+.success {
+    background: green;
+    color: white;
+}
+
+.danger {
+    background: red;
+    color: white;
+}
+
+/* FORM */
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}

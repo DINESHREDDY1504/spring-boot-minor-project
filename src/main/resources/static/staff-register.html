@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Register Staff</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .center-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .card {
+            width: 400px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>Municipal Complaint Portal</h1>
+    </div>
+
+    <!-- NAVBAR -->
+    <div class="navbar">
+        <a href="index.html">Home</a>
+        <a href="raise.html">Raise Complaint</a>
+        <a href="track.html">Track</a>
+    </div>
+
+    <div class="center-box">
+
+        <div class="card">
+
+            <h2>Staff Registration</h2>
+
+            <form id="registerForm">
+
+                <label>Name</label>
+                <input type="text" id="name" required>
+
+                <label>Username</label>
+                <input type="text" id="username" required>
+
+                <label>Password</label>
+                <input type="password" id="password" required>
+
+                <label>Department</label>
+                <input type="text" id="department" required>
+
+                <label>Role</label>
+                <select id="role" required>
+                    <option value="">Select Role</option>
+                    <option value="AUTHORITY">Authority</option>
+                    <option value="TECHNICAL">Technical</option>
+                </select>
+
+                <label>Employee ID</label>
+                <input type="text" id="employeeId" required>
+
+                <button class="primary">Register</button>
+
+            </form>
+
+            <p id="message"></p>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        document.getElementById("registerForm").addEventListener("submit", function (e) {
+
+            e.preventDefault();
+
+            const data = {
+                name: document.getElementById("name").value.trim(),
+                username: document.getElementById("username").value.trim(),
+                password: document.getElementById("password").value.trim(),
+                department: document.getElementById("department").value.trim(),
+                role: document.getElementById("role").value,
+                employeeId: document.getElementById("employeeId").value.trim()
+            };
+
+            fetch("http://localhost:8080/api/staff/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.json();
+                })
+                .then(() => {
+                    document.getElementById("message").innerText = "✅ Registered Successfully!";
+                    setTimeout(() => window.location.href = "staff-login.html", 1000);
+                })
+                .catch(() => {
+                    document.getElementById("message").innerText = "❌ Registration Failed";
+                });
+
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Staff Login</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .center-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80vh;
+        }
+
+        .card {
+            width: 350px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 🔵 HEADER -->
+    <div class="header">
+        <h1>Municipal Complaint Portal</h1>
+    </div>
+
+    <!-- 🔷 NAVBAR -->
+    <div class="navbar">
+        <a href="index.html">Home</a>
+        <a href="raise.html">Raise Complaint</a>
+        <a href="track.html">Track</a>
+    </div>
+
+    <div class="center-box">
+
+        <div class="card">
+
+            <h2>Staff Login</h2>
+
+            <form id="loginForm">
+
+                <label>Username</label>
+                <input type="text" id="username" required>
+
+                <label>Password</label>
+                <input type="password" id="password" required>
+
+                <button class="primary">Login</button>
+
+            </form>
+
+            <p id="message" style="color:red;"></p>
+
+            <p style="text-align:center">
+                New Staff? <a href="staff-register.html">Register</a>
+            </p>
+
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            fetch("http://localhost:8080/api/staff/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ username, password })
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.text();
+                })
+                .then(data => {
+
+                    let role = data.includes("AUTHORITY") ? "AUTHORITY" : "TECHNICAL";
+
+                    // 🔥 IMPORTANT ADDITION
+                    localStorage.setItem("role", role);
+                    localStorage.setItem("username", username);
+
+                    alert("✅ Login Success (" + role + ")");
+                    window.location.href = "dashboard.html";
+                })
+                .catch(() => {
+                    document.getElementById("message").innerText = "❌ Invalid Login";
+                });
+        });
+    </script>
+
+</body>
+
+</html>

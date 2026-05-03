@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Raise Complaint</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Raise Complaint</h1>
+    </div>
+
+    <div class="card">
+
+        <form id="complaintForm">
+
+            <!-- 🔥 NEW EMAIL FIELD -->
+            <!-- <input type="email" id="email" placeholder="Enter your email" required> -->
+
+            <!-- EXISTING -->
+            <select id="category" required>
+                <option value="">Select Category</option>
+                <option>Garbage</option>
+                <option>Road Damage</option>
+                <option>Street Light</option>
+            </select>
+
+            <textarea id="description" placeholder="Enter description" required></textarea>
+
+            <input type="file" id="image" required>
+
+            <button class="primary">Submit</button>
+
+        </form>
+
+    </div>
+
+    <!-- EXISTING -->
+    <div id="message"></div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

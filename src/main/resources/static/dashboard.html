@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Municipal Dashboard</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- Cluster -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+    <!-- Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #f4f6f9;
+        }
+
+        .navbar {
+            background: #0b3d91;
+            color: white;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            padding: 15px;
+            gap: 15px;
+        }
+
+        .left {
+            width: 35%;
+        }
+
+        .right {
+            width: 65%;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 6px 12px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .pending {
+            background: red;
+            color: white;
+        }
+
+        .solved {
+            background: green;
+            color: white;
+        }
+
+        .all {
+            background: #0b3d91;
+            color: white;
+        }
+
+        #map {
+            height: 500px;
+            border-radius: 8px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- 🔥 UPDATED NAVBAR -->
+    <div class="navbar">
+        Municipal Complaint Management System
+
+        <span style="float:right">
+            <span id="userDisplay" style="margin-right:15px"></span>
+            <button onclick="logout()"
+                style="background:red;color:white;border:none;padding:6px 12px;border-radius:5px">
+                Logout
+            </button>
+        </span>
+    </div>
+
+    <div class="container">
+
+        <!-- LEFT -->
+        <div class="left">
+
+            <div class="card">
+                <h3>📊 Complaint Report</h3>
+
+                <button class="all" onclick="filterMap('ALL')">All</button>
+                <button class="pending" onclick="filterMap('PENDING')">Pending</button>
+                <button class="solved" onclick="filterMap('SOLVED')">Solved</button>
+
+                <p id="stats"></p>
+
+                <canvas id="chart"></canvas>
+            </div>
+
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right">
+            <div class="card">
+                <h3>📍 Complaint Map</h3>
+                <div id="map"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+
+        const role = localStorage.getItem("role");
+
+        // 🔥 SHOW USERNAME
+        document.getElementById("userDisplay").innerText =
+            "👤 " + (localStorage.getItem("username") || "Guest");
+
+        let all = [];
+
+        // MAP INIT
+        let map = L.map('map', { scrollWheelZoom: false })
+            .setView([17.3, 78.4], 12);
+
+        // LIGHT THEME
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        // CTRL + SCROLL ONLY
+        map.scrollWheelZoom.disable();
+        map.getContainer().addEventListener('wheel', function (e) {
+            if (!e.ctrlKey) {
+                e.preventDefault();
+            } else {
+                map.scrollWheelZoom.enable();
+            }
+        }, { passive: false });
+
+        // CLUSTER GROUP
+        let cluster = L.markerClusterGroup();
+        map.addLayer(cluster);
+
+        // STATS
+        fetch("http://localhost:8080/api/complaints/stats")
+            .then(r => r.json())
+            .then(d => {
+
+                document.getElementById("stats").innerHTML =
+                    `<span style="color:#0b3d91"><b>Total:</b> ${d.total}</span> |
+                     <span style="color:red"><b>Pending:</b> ${d.pending}</span> |
+                     <span style="color:green"><b>Solved:</b> ${d.solved}</span> |
+                     <b>Accuracy:</b> ${d.accuracy}%`;
+
+                new Chart(document.getElementById("chart"), {
+                    type: 'bar',
+                    data: {
+                        labels: ["Total", "Pending", "Solved"],
+                        datasets: [{
+                            data: [d.total, d.pending, d.solved],
+                            backgroundColor: ["#0b3d91", "red", "green"]
+                        }]
+                    }
+                });
+
+            });
+
+        // LOAD DATA
+        fetch("http://localhost:8080/api/complaints/all")
+            .then(r => r.json())
+            .then(d => {
+                all = d;
+                show(all.filter(c => !c.duplicate));
+            });
+
+        function show(data) {
+
+            cluster.clearLayers();
+
+            let bounds = [];
+
+            data.forEach(c => {
+
+                if (!c.latitude || !c.longitude) return;
+
+                let color = c.status === "SOLVED" ? "green" : "red";
+
+                let m = L.circleMarker([c.latitude, c.longitude], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.7,
+                    radius: 10,
+                    weight: 2
+                });
+
+                m.bindPopup(`
+                <div style="width:220px">
+                    <b>${c.category}</b><br>
+                    ${c.description}<br><br>
+
+                    <p><b>Status:</b> ${c.status}</p>
+
+                    <h4>📸 Before</h4>
+                    <img src="http://localhost:8080${c.imageUrl}" width="200"><br>
+
+                    ${c.status === "SOLVED" ? `
+                        <h4>✅ After</h4>
+                        <img src="http://localhost:8080${c.resolvedImageUrl}" width="200"><br>
+                        ${c.feedback
+                            ? `<p style="color:purple"><b>Feedback:</b> ${c.feedback}</p>`
+                            : "<p style='color:gray'>No feedback</p>"
+                        }
+                    ` : `<p style="color:red"><b>⏳ Pending</b></p>`}
+
+                    ${role === "TECHNICAL" && c.status !== "SOLVED"
+                        ? `<input type=file id=f${c.id}>
+                           <button onclick=solve(${c.id})>Mark Solved</button>`
+                        : ""}
+                </div>
+                `);
+
+                cluster.addLayer(m);
+                bounds.push([c.latitude, c.longitude]);
+            });
+
+            if (bounds.length) {
+                map.fitBounds(bounds);
+            }
+        }
+
+        function filterMap(t) {
+
+            let filtered = all.filter(c => !c.duplicate);
+
+            if (t === "ALL") show(filtered);
+            else show(filtered.filter(c => c.status === t));
+        }
+
+        function solve(id) {
+
+            let f = document.getElementById("f" + id).files[0];
+            if (!f) { alert("Upload image"); return; }
+
+            let fd = new FormData();
+            fd.append("image", f);
+
+            fetch("http://localhost:8080/api/complaints/solve/" + id, {
+                method: "PUT",
+                body: fd
+            })
+                .then(() => location.reload());
+        }
+
+        // 🔥 LOGOUT FUNCTION
+        function logout() {
+
+            let username = localStorage.getItem("username");
+
+            fetch("http://localhost:8080/api/staff/logout", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: username
+                })
+            })
+                .then(() => {
+
+                    localStorage.clear();
+
+                    alert("✅ Logged out successfully");
+
+                    window.location.href = "staff-login.html";
+                })
+                .catch(() => {
+                    alert("❌ Logout failed");
+                });
+        }
+
+    </script>
+
+</body>
+
+</html>
