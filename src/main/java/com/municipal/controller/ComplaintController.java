@@ -38,11 +38,10 @@ public class ComplaintController {
     @Autowired
     private SmsService smsService;
 
-    // ✅ NEW: Cloudinary injection
     @Autowired
     private Cloudinary cloudinary;
 
-    // 🔹 Upload Complaint (MODIFIED)
+    // 🔹 Upload Complaint (UNCHANGED)
     @PostMapping("/upload")
     public Complaint uploadComplaint(
             @RequestParam("category") String category,
@@ -52,7 +51,6 @@ public class ComplaintController {
             @RequestParam("image") MultipartFile file,
             HttpServletRequest request) throws Exception {
 
-        // 🔥 Upload to Cloudinary (instead of local storage)
         Map uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.emptyMap()
@@ -67,7 +65,7 @@ public class ComplaintController {
         complaint.setDescription(description);
         complaint.setLatitude(latitude);
         complaint.setLongitude(longitude);
-        complaint.setImageUrl(imageUrl); // ✅ Cloudinary URL
+        complaint.setImageUrl(imageUrl);
 
         return complaintService.saveComplaint(complaint, ipAddress);
     }
@@ -85,20 +83,20 @@ public class ComplaintController {
     }
 
     // 🔹 Email (UNCHANGED)
-   @PostMapping("/sendEmail")
-public String sendEmail(@RequestBody Map<String, String> body) {
+    @PostMapping("/sendEmail")
+    public String sendEmail(@RequestBody Map<String, String> body) {
 
-    try {
-        String email = body.get("email");
-        String complaintId = body.get("complaintId");
+        try {
+            String email = body.get("email");
+            String complaintId = body.get("complaintId");
 
-        emailService.sendComplaintEmail(email, complaintId);
+            emailService.sendComplaintEmail(email, complaintId);
 
-        return "SUCCESS";
-    } catch (Exception e) {
-        return "FAILED";
+            return "SUCCESS";
+        } catch (Exception e) {
+            return "FAILED";
+        }
     }
-}
 
     // 🔹 Get All Complaints (UNCHANGED)
     @GetMapping("/all")
@@ -106,7 +104,7 @@ public String sendEmail(@RequestBody Map<String, String> body) {
         return complaintService.getAllComplaints();
     }
 
-    // 🔹 Stats (UNCHANGED)
+    // 🔹 Stats (UNCHANGED - spam count will come from service)
     @GetMapping("/stats")
     public Map<String, Object> getStats() {
         return complaintService.getStats();
@@ -120,13 +118,12 @@ public String sendEmail(@RequestBody Map<String, String> body) {
         return complaintService.addFeedback(id, body.get("feedback"));
     }
 
-    // 🔹 Solve Complaint (MODIFIED)
+    // 🔹 Solve Complaint (UNCHANGED)
     @PutMapping(value = "/solve/{id}", consumes = "multipart/form-data")
     public Complaint solveComplaint(
             @PathVariable Long id,
             @RequestParam("image") MultipartFile file) throws Exception {
 
-        // 🔥 Upload resolved image to Cloudinary
         Map uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.emptyMap()
@@ -135,18 +132,38 @@ public String sendEmail(@RequestBody Map<String, String> body) {
         String imageUrl = uploadResult.get("secure_url").toString();
 
         Complaint update = new Complaint();
-        update.setResolvedImageUrl(imageUrl); // ✅ Cloudinary URL
+        update.setResolvedImageUrl(imageUrl);
 
         return complaintService.markSolved(id, update);
     }
 
-    // 🔹 Tracking (UNCHANGED)
+    // 🔥 NEW: MARK AS SPAM (ADDED)
+    @PutMapping("/markSpam/{complaintId}")
+    public String markSpam(@PathVariable String complaintId,
+            @RequestParam String reason) {
+
+        complaintService.markAsSpam(complaintId, reason);
+
+        return "Complaint marked as SPAM";
+    }
+
+    // 🔹 Tracking (ONLY SPAM CHECK ADDED)
     @GetMapping("/{complaintId}")
-    public Complaint getComplaintById(@PathVariable String complaintId) {
+    public Object getComplaintById(@PathVariable String complaintId) {
 
         Complaint c = complaintService.getByComplaintId(complaintId);
 
-        if (c != null && c.isDuplicate()) {
+        if (c == null) {
+            return "Complaint not found";
+        }
+
+        // 🔴 SPAM CHECK (NEW)
+        if (c.isSpam()) {
+            return "🚫 This complaint is marked as SPAM and cannot be tracked.";
+        }
+
+        // 🔥 EXISTING LOGIC (UNCHANGED)
+        if (c.isDuplicate()) {
 
             Complaint parent = complaintService.getByComplaintId(c.getParentComplaintId());
 

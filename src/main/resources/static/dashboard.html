@@ -110,6 +110,7 @@
                 <button class="all" onclick="filterMap('ALL')">All</button>
                 <button class="pending" onclick="filterMap('PENDING')">Pending</button>
                 <button class="solved" onclick="filterMap('SOLVED')">Solved</button>
+                <button onclick="markSpam('${c.complaintId}')">Mark Spam</button>
 
                 <p id="stats"></p>
 
@@ -132,71 +133,56 @@
         const BASE_URL = "https://spring-boot-minor-project.onrender.com";
         const role = localStorage.getItem("role");
 
-        // 🔥 SHOW USERNAME
         document.getElementById("userDisplay").innerText =
             "👤 " + (localStorage.getItem("username") || "Guest");
 
         let all = [];
 
-        // MAP INIT
         let map = L.map('map', { scrollWheelZoom: false })
             .setView([17.3, 78.4], 12);
 
-        // LIGHT THEME
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
-        // CTRL + SCROLL ONLY
-        map.scrollWheelZoom.disable();
-        map.getContainer().addEventListener('wheel', function (e) {
-            if (!e.ctrlKey) {
-                e.preventDefault();
-            } else {
-                map.scrollWheelZoom.enable();
-            }
-        }, { passive: false });
-
-        // CLUSTER GROUP
         let cluster = L.markerClusterGroup();
         map.addLayer(cluster);
 
-        // STATS
+        // 🔥 UPDATED STATS (WITH SPAM)
         fetch(`${BASE_URL}/api/complaints/stats`)
             .then(r => r.json())
             .then(d => {
 
                 document.getElementById("stats").innerHTML =
                     `<span style="color:#0b3d91"><b>Total:</b> ${d.total}</span> |
-                     <span style="color:red"><b>Pending:</b> ${d.pending}</span> |
-                     <span style="color:green"><b>Solved:</b> ${d.solved}</span> |
-                     <b>Accuracy:</b> ${d.accuracy}%`;
+             <span style="color:red"><b>Pending:</b> ${d.pending}</span> |
+             <span style="color:green"><b>Solved:</b> ${d.solved}</span> |
+             <span style="color:black"><b>Spam:</b> ${d.spam}</span> |
+             <b>Accuracy:</b> ${d.accuracy}%`;
 
                 new Chart(document.getElementById("chart"), {
                     type: 'bar',
                     data: {
-                        labels: ["Total", "Pending", "Solved"],
+                        labels: ["Total", "Pending", "Solved", "Spam"],
                         datasets: [{
-                            data: [d.total, d.pending, d.solved],
-                            backgroundColor: ["#0b3d91", "red", "green"]
+                            data: [d.total, d.pending, d.solved, d.spam],
+                            backgroundColor: ["#0b3d91", "red", "green", "black"]
                         }]
                     }
                 });
-
             });
 
-        // LOAD DATA
+        // 🔥 LOAD DATA (HIDE SPAM)
         fetch(`${BASE_URL}/api/complaints/all`)
             .then(r => r.json())
             .then(d => {
                 all = d;
-                show(all.filter(c => !c.duplicate));
+                show(all.filter(c => !c.duplicate && !c.spam)); // 🔥 hide spam
             });
 
         function show(data) {
 
             cluster.clearLayers();
-
             let bounds = [];
 
             data.forEach(c => {
@@ -214,48 +200,72 @@
                 });
 
                 m.bindPopup(`
-                <div style="width:220px">
-                    <b>${c.category}</b><br>
-                    ${c.description}<br><br>
+        <div style="width:220px">
+            <b>${c.category}</b><br>
+            ${c.description}<br><br>
 
-                    <p><b>Status:</b> ${c.status}</p>
+            <p><b>Status:</b> ${c.status}</p>
 
-                    <h4>📸 Before</h4>
-                    <img src="${c.imageUrl}" width="200"><br>
+            <h4>📸 Before</h4>
+            <img src="${c.imageUrl}" width="200"><br>
 
-                    ${c.status === "SOLVED" ? `
-                        <h4>✅ After</h4>
-                        <img src="${c.resolvedImageUrl}" width="200"><br>
-                        ${c.feedback
+            ${c.status === "SOLVED" ? `
+                <h4>✅ After</h4>
+                <img src="${c.resolvedImageUrl}" width="200"><br>
+                ${c.feedback
                             ? `<p style="color:purple"><b>Feedback:</b> ${c.feedback}</p>`
                             : "<p style='color:gray'>No feedback</p>"
                         }
-                    ` : `<p style="color:red"><b>⏳ Pending</b></p>`}
+            ` : `<p style="color:red"><b>⏳ Pending</b></p>`}
 
-                    ${role === "TECHNICAL" && c.status !== "SOLVED"
-                        ? `<input type=file id=f${c.id}>
-                           <button onclick=solve(${c.id})>Mark Solved</button>`
+            ${role === "TECHNICAL" && !c.spam
+                        ? `
+                <button onclick="markSpam('${c.complaintId}')"
+                        style="background:black;color:white">
+                    🚫 Mark Spam
+                </button>
+                `
                         : ""}
-                </div>
-                `);
+
+            ${role === "TECHNICAL" && c.status !== "SOLVED"
+                        ? `<input type=file id=f${c.id}>
+                   <button onclick=solve(${c.id})>Mark Solved</button>`
+                        : ""}
+        </div>
+        `);
 
                 cluster.addLayer(m);
                 bounds.push([c.latitude, c.longitude]);
             });
 
-            if (bounds.length) {
-                map.fitBounds(bounds);
-            }
+            if (bounds.length) map.fitBounds(bounds);
         }
 
-        function filterMap(t) {
+        // 🔥 MARK SPAM
+        function markSpam(id) {
+            const reason = prompt("Enter spam reason:");
 
-            let filtered = all.filter(c => !c.duplicate);
+            if (!reason) return;
+
+            fetch(`${BASE_URL}/api/complaints/markSpam/${id}?reason=${reason}`, {
+                method: "PUT"
+            })
+                .then(res => res.text())
+                .then(msg => {
+                    alert(msg);
+                    location.reload(); // refresh after spam
+                });
+        }
+
+        // FILTER
+        function filterMap(t) {
+            let filtered = all.filter(c => !c.duplicate && !c.spam);
 
             if (t === "ALL") show(filtered);
             else show(filtered.filter(c => c.status === t));
         }
 
+        // SOLVE
         function solve(id) {
 
             let f = document.getElementById("f" + id).files[0];
@@ -271,33 +281,23 @@
                 .then(() => location.reload());
         }
 
-        // 🔥 LOGOUT FUNCTION
+        // LOGOUT (UNCHANGED)
         function logout() {
 
             let username = localStorage.getItem("username");
 
             fetch(`${BASE_URL}/api/staff/logout`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    username: username
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username })
             })
                 .then(() => {
-
                     localStorage.clear();
-
                     alert("✅ Logged out successfully");
-
                     window.location.href = "staff-login.html";
                 })
-                .catch(() => {
-                    alert("❌ Logout failed");
-                });
+                .catch(() => alert("❌ Logout failed"));
         }
-
     </script>
 
 </body>

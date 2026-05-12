@@ -13,8 +13,15 @@ public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
 
     Optional<Complaint> findByComplaintId(String complaintId);
 
-    // 🔥 NEW
+    // 🔥 EXISTING (UNCHANGED)
     List<Complaint> findByIpAddress(String ipAddress);
 
     List<Complaint> findByImageUrl(String imageUrl);
+
+    // 🔥 NEW: SPAM FEATURES
+    long countBySpamTrue();
+
+    List<Complaint> findBySpamTrue();
+
+    List<Complaint> findBySpamFalse();
 }

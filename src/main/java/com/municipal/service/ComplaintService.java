@@ -1,10 +1,7 @@
 package com.municipal.service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,11 +18,8 @@ public class ComplaintService {
     @Autowired
     private EmailService emailService;
 
-    // 🔥 DISTANCE FUNCTION (UNCHANGED)
     public double distance(double lat1, double lon1, double lat2, double lon2) {
-
         double R = 6371;
-
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
 
@@ -35,7 +29,6 @@ public class ComplaintService {
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
         return R * c * 1000;
     }
 
@@ -48,9 +41,6 @@ public class ComplaintService {
         String id = "MUN-" + UUID.randomUUID().toString().substring(0, 8);
         complaint.setComplaintId(id);
 
-        // ✅ FIX: DO NOT ADD /uploads/ (Cloudinary already gives full URL)
-        // ❌ REMOVED: complaint.setImageUrl("/uploads/" + complaint.getImageUrl());
-        // 🔥 DUPLICATE DETECTION (UNCHANGED)
         List<Complaint> all = complaintRepository.findAll();
 
         for (Complaint c : all) {
@@ -62,7 +52,7 @@ public class ComplaintService {
                 continue;
             }
 
-            if (!c.getCategory().trim().equalsIgnoreCase(complaint.getCategory().trim())) {
+            if (!c.getCategory().equalsIgnoreCase(complaint.getCategory())) {
                 continue;
             }
 
@@ -76,40 +66,40 @@ public class ComplaintService {
             }
 
             if ("SOLVED".equalsIgnoreCase(c.getStatus())) {
-
-                if (c.getCreatedAt() != null) {
-
-                    LocalDateTime now = LocalDateTime.now();
-
-                    if (c.getCreatedAt().isBefore(now.minusDays(10))) {
-                        continue;
-                    }
+                if (c.getCreatedAt() != null
+                        && c.getCreatedAt().isBefore(LocalDateTime.now().minusDays(10))) {
+                    continue;
                 }
             }
 
-            // ✅ DUPLICATE FOUND
             complaint.setDuplicate(true);
             complaint.setParentComplaintId(c.getComplaintId());
             complaint.setStatus(c.getStatus());
-
             break;
         }
 
         Complaint saved = complaintRepository.save(complaint);
 
-        // 🔥 EMAIL (UNCHANGED)
         try {
             if (saved.getEmail() != null && !saved.getEmail().isEmpty()) {
-                emailService.sendComplaintEmail(
-                        saved.getEmail(),
-                        saved.getComplaintId()
-                );
+                emailService.sendComplaintEmail(saved.getEmail(), saved.getComplaintId());
             }
         } catch (Exception e) {
-            System.out.println("❌ Email failed: " + e.getMessage());
+            System.out.println("Email failed");
         }
 
         return saved;
+    }
+
+    // 🔥 MARK SPAM
+    public void markAsSpam(String complaintId, String reason) {
+        Complaint c = complaintRepository.findByComplaintId(complaintId)
+                .orElseThrow(() -> new RuntimeException("Not found"));
+
+        c.setSpam(true);
+        c.setSpamReason(reason);
+
+        complaintRepository.save(c);
     }
 
     public List<Complaint> getAllComplaints() {
@@ -121,6 +111,7 @@ public class ComplaintService {
         long total = complaintRepository.count();
         long pending = complaintRepository.countByStatus("PENDING");
         long solved = complaintRepository.countByStatus("SOLVED");
+        long spam = complaintRepository.countBySpamTrue();
 
         double accuracy = total > 0 ? (solved * 100.0) / total : 0;
 
@@ -128,30 +119,21 @@ public class ComplaintService {
         stats.put("total", total);
         stats.put("pending", pending);
         stats.put("solved", solved);
+        stats.put("spam", spam);
         stats.put("accuracy", Math.round(accuracy * 100.0) / 100.0);
 
         return stats;
     }
 
     public Complaint addFeedback(String complaintId, String feedback) {
-
-        Complaint c = complaintRepository
-                .findByComplaintId(complaintId)
-                .orElseThrow();
+        Complaint c = complaintRepository.findByComplaintId(complaintId).orElseThrow();
 
         if (c.isDuplicate()) {
-
             Complaint parent = complaintRepository
-                    .findByComplaintId(c.getParentComplaintId())
-                    .orElseThrow();
+                    .findByComplaintId(c.getParentComplaintId()).orElseThrow();
 
             String existing = parent.getFeedback();
-
-            if (existing == null || existing.isEmpty()) {
-                parent.setFeedback(feedback);
-            } else {
-                parent.setFeedback(existing + " | " + feedback);
-            }
+            parent.setFeedback(existing == null ? feedback : existing + " | " + feedback);
 
             return complaintRepository.save(parent);
         }
@@ -163,10 +145,8 @@ public class ComplaintService {
     public Complaint markSolved(Long id, Complaint update) {
 
         Complaint parent = complaintRepository.findById(id).orElseThrow();
-
         parent.setStatus("SOLVED");
 
-        // ✅ FIX: DO NOT ADD /uploads/ (Cloudinary URL)
         if (update.getResolvedImageUrl() != null) {
             parent.setResolvedImageUrl(update.getResolvedImageUrl());
         }
@@ -176,13 +156,11 @@ public class ComplaintService {
         List<Complaint> all = complaintRepository.findAll();
 
         for (Complaint c : all) {
-
             if (c.getParentComplaintId() != null
                     && c.getParentComplaintId().equals(parent.getComplaintId())) {
 
                 c.setStatus("SOLVED");
                 c.setResolvedImageUrl(parent.getResolvedImageUrl());
-
                 complaintRepository.save(c);
             }
         }

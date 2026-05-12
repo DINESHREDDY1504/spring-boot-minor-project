@@ -26,10 +26,13 @@ public class Complaint {
     private String feedback;
     private String email;
 
-    // 🔥 DUPLICATE FIELDS (CLEANED)
     private boolean duplicate;
     private String parentComplaintId;
     private String ipAddress;
+
+    // 🔥 NEW SPAM FIELDS
+    private boolean spam = false;
+    private String spamReason;
 
     // ================= GETTERS & SETTERS =================
     public Long getId() {
@@ -128,6 +131,14 @@ public class Complaint {
         this.email = email;
     }
 
+    public boolean isDuplicate() {
+        return duplicate;
+    }
+
+    public void setDuplicate(boolean duplicate) {
+        this.duplicate = duplicate;
+    }
+
     public String getParentComplaintId() {
         return parentComplaintId;
     }
@@ -144,12 +155,20 @@ public class Complaint {
         this.ipAddress = ipAddress;
     }
 
-    // 🔥 CLEAN BOOLEAN GETTER
-    public boolean isDuplicate() {
-        return duplicate;
+    // 🔥 SPAM
+    public boolean isSpam() {
+        return spam;
     }
 
-    public void setDuplicate(boolean duplicate) {
-        this.duplicate = duplicate;
+    public void setSpam(boolean spam) {
+        this.spam = spam;
+    }
+
+    public String getSpamReason() {
+        return spamReason;
+    }
+
+    public void setSpamReason(String spamReason) {
+        this.spamReason = spamReason;
     }
 }
