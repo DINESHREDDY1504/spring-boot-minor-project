@@ -1,11 +1,7 @@
 package com.municipal.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.municipal.model.Staff;
 import com.municipal.service.StaffService;
@@ -18,9 +14,27 @@ public class StaffController {
     @Autowired
     private StaffService staffService;
 
-    // 🔹 REGISTER (UNCHANGED)
+    // 🔹 REGISTER (UPDATED WITH SECRET CHECK)
     @PostMapping("/register")
     public Staff register(@RequestBody Staff staff) {
+
+        // 🔐 Get secret from request
+        String userSecret = staff.getSecretCode();
+
+        // 🔐 Get actual secret from ENV
+        String ADMIN_SECRET = System.getenv("STAFF_SECRET");
+
+        // ❌ Invalid secret → block
+        if (ADMIN_SECRET == null || userSecret == null || !ADMIN_SECRET.equals(userSecret.trim())) {
+            throw new RuntimeException("Invalid Secret Code");
+        }
+
+        // ❌ Duplicate username → block
+        if (staffService.existsByUsername(staff.getUsername())) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        // ✅ Continue original logic
         return staffService.registerStaff(staff);
     }
 
@@ -40,7 +54,7 @@ public class StaffController {
         }
     }
 
-    // 🔥 NEW: LOGOUT API
+    // 🔥 LOGOUT (UNCHANGED)
     @PostMapping("/logout")
     public String logout(@RequestBody Staff staff) {
 

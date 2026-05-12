@@ -54,7 +54,8 @@
 
                 <label>Password</label>
                 <input type="password" id="password" required>
-
+                <label>Secret Code</label>
+                <input type="password" id="secretCode" required>
                 <label>Department</label>
                 <input type="text" id="department" required>
 
@@ -90,8 +91,13 @@
                 password: document.getElementById("password").value.trim(),
                 department: document.getElementById("department").value.trim(),
                 role: document.getElementById("role").value,
-                employeeId: document.getElementById("employeeId").value.trim()
+                employeeId: document.getElementById("employeeId").value.trim(),
+                secretCode: document.getElementById("secretCode").value.trim() // 🔥 ADD THIS
             };
+
+            const btn = document.querySelector("button");
+            btn.disabled = true;
+            btn.innerText = "Registering...";
 
             fetch("https://spring-boot-minor-project.onrender.com/api/staff/register", {
                 method: "POST",
@@ -100,19 +106,24 @@
                 },
                 body: JSON.stringify(data)
             })
-                .then(res => {
-                    if (!res.ok) throw new Error();
-                    return res.json();
-                })
-                .then(() => {
-                    document.getElementById("message").innerText = "✅ Registered Successfully!";
-                    setTimeout(() => window.location.href = "staff-login.html", 1000);
+                .then(res => res.text()) // 🔥 change from json to text
+                .then(msg => {
+                    document.getElementById("message").innerText = msg;
+
+                    if (msg.includes("Successfully")) {
+                        setTimeout(() => window.location.href = "staff-login.html", 1200);
+                    }
                 })
                 .catch(() => {
                     document.getElementById("message").innerText = "❌ Registration Failed";
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerText = "Register";
                 });
 
         });
+
     </script>
 
 </body>

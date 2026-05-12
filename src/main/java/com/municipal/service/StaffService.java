@@ -20,6 +20,10 @@ public class StaffService {
     @Autowired
     private StaffLogRepository staffLogRepository;
 
+    public boolean existsByUsername(String username) {
+        return staffRepository.findByUsernameIgnoreCase(username.trim()) != null;
+    }
+
     // REGISTER (UNCHANGED)
     public Staff registerStaff(Staff staff) {
 

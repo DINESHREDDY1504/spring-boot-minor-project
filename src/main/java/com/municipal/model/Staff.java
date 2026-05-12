@@ -1,4 +1,3 @@
-
 package com.municipal.model;
 
 import jakarta.persistence.Entity;
@@ -19,9 +18,20 @@ public class Staff {
     private String department;
     private String role;
     private String employeeId;
+    private String secretCode;
+
+    public String getSecretCode() {
+        return secretCode;
+    }
+
+    public void setSecretCode(String secretCode) {
+        this.secretCode = secretCode;
+    }
+
     public String getRole() {
         return role;
     }
+
     public void setRole(String role) {
         this.role = role;
     }
@@ -29,6 +39,7 @@ public class Staff {
     public String getEmployeeId() {
         return employeeId;
     }
+
     public void setEmployeeId(String employeeId) {
         this.employeeId = employeeId;
     }
