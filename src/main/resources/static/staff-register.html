@@ -106,21 +106,23 @@
                 },
                 body: JSON.stringify(data)
             })
-                .then(res => res.text()) // 🔥 change from json to text
-                .then(msg => {
-                    document.getElementById("message").innerText = msg;
-
-                    if (msg.toLowerCase().includes("success")) {
-                        setTimeout(() => window.location.href = "staff-login.html", 1200);
+                .then(res => {
+                    if (!res.ok) {
+                        return res.text().then(err => { throw err });
                     }
+                    return res.text();
                 })
-            .catch(() => {
-                document.getElementById("message").innerText = "❌ Registration Failed";
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerText = "Register";
-            });
+                .then(msg => {
+                    alert(msg); // ✅ success alert
+                    window.location.href = "staff-login.html";
+                })
+                .catch(err => {
+                    alert(err); // ❌ error alert (invalid secret, duplicate username)
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerText = "Register";
+                });
 
         });
 

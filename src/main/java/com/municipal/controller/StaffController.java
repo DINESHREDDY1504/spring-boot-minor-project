@@ -25,22 +25,22 @@ public class StaffController {
 
     // 🔹 REGISTER (UPDATED WITH SECRET CHECK)
     @PostMapping("/register")
-    public Staff register(@RequestBody Staff staff) {
+    // @PostMapping("/register")
+    public String register(@RequestBody Staff staff) {
 
         String userSecret = staff.getSecretCode();
 
-        // ❌ Invalid secret → block
         if (ADMIN_SECRET == null || userSecret == null || !ADMIN_SECRET.equals(userSecret.trim())) {
             throw new RuntimeException("Invalid Secret Code");
         }
 
-        // ❌ Duplicate username → block
         if (staffService.existsByUsername(staff.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
 
-        // ✅ Continue original logic
-        return staffService.registerStaff(staff);
+        staffService.registerStaff(staff);
+
+        return "Staff Registered Successfully";
     }
 
     // 🔹 LOGIN (UNCHANGED)
