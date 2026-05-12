@@ -110,17 +110,17 @@
                 .then(msg => {
                     document.getElementById("message").innerText = msg;
 
-                    if (msg.includes("Successfully")) {
+                    if (msg.toLowerCase().includes("success")) {
                         setTimeout(() => window.location.href = "staff-login.html", 1200);
                     }
                 })
-                .catch(() => {
-                    document.getElementById("message").innerText = "❌ Registration Failed";
-                })
-                .finally(() => {
-                    btn.disabled = false;
-                    btn.innerText = "Register";
-                });
+            .catch(() => {
+                document.getElementById("message").innerText = "❌ Registration Failed";
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = "Register";
+            });
 
         });
 

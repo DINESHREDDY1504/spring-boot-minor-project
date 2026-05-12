@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Transient;
 
 @Entity
 public class Staff {
@@ -18,6 +19,8 @@ public class Staff {
     private String department;
     private String role;
     private String employeeId;
+
+    @Transient  // 🔥 VERY IMPORTANT (not stored in DB)
     private String secretCode;
 
     public String getSecretCode() {

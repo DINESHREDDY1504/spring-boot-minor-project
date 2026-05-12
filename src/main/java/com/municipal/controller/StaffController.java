@@ -1,7 +1,12 @@
 package com.municipal.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.municipal.model.Staff;
 import com.municipal.service.StaffService;
@@ -14,15 +19,15 @@ public class StaffController {
     @Autowired
     private StaffService staffService;
 
+    // ✅ Get secret from application.properties (linked to ENV)
+    @Value("${staff.registration.secret}")
+    private String ADMIN_SECRET;
+
     // 🔹 REGISTER (UPDATED WITH SECRET CHECK)
     @PostMapping("/register")
     public Staff register(@RequestBody Staff staff) {
 
-        // 🔐 Get secret from request
         String userSecret = staff.getSecretCode();
-
-        // 🔐 Get actual secret from ENV
-        String ADMIN_SECRET = System.getenv("STAFF_SECRET");
 
         // ❌ Invalid secret → block
         if (ADMIN_SECRET == null || userSecret == null || !ADMIN_SECRET.equals(userSecret.trim())) {
