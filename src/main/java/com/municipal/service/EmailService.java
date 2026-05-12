@@ -1,6 +1,7 @@
 package com.municipal.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,10 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    // ✅ Get sender email from application.properties (ENV)
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+
     public void sendComplaintEmail(String to, String complaintId) {
 
         try {
@@ -20,7 +25,6 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-            // ✅ FIXED (use deployed URL)
             String trackLink = "https://spring-boot-minor-project.onrender.com/track.html?id=" + complaintId;
 
             String htmlContent
@@ -39,15 +43,21 @@ public class EmailService {
                     + "<p>" + trackLink + "</p>"
                     + "<br>"
                     + "<p>Thank you.</p>"
-                    + "<p><i>Municipal Complaint Management System,TML</i></p>";
+                    + "<p><i>Municipal Complaint Management System, TML</i></p>";
 
             helper.setTo(to);
             helper.setSubject("Complaint Registered Successfully");
             helper.setText(htmlContent, true);
 
+            // ✅ VERY IMPORTANT (missing in your code)
+            helper.setFrom(fromEmail, "Municipal Complaint System");
+
             mailSender.send(message);
 
+            System.out.println("✅ Email sent successfully to: " + to);
+
         } catch (Exception e) {
+            System.out.println("❌ Email sending failed");
             e.printStackTrace();
         }
     }
